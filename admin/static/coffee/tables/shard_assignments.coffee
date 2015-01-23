@@ -6,20 +6,16 @@ module 'TableView', ->
         initialize: (data) =>
             @model = data.model
             if data.collection?
-                @loading = false
                 @collection = data.collection
             else
-                @loading = true
             @assignments_view = []
 
         set_assignments: (assignments) =>
-            @loading = false
             @collection = assignments
             @render()
 
         render: =>
             @$el.html @template
-                loading: @loading
             if @collection?
                 @collection.each (assignment) =>
                     view = new TableView.ShardAssignmentView

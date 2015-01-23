@@ -581,12 +581,9 @@ module 'TableView', ->
             @adding_index = false
 
             if @collection?
-                @loading = false
                 @hook()
             else
-                @loading = true
                 @$el.html @template
-                    loading: @loading
                     adding_index: @adding_index
 
         set_fetch_progress: (index) =>
@@ -629,16 +626,12 @@ module 'TableView', ->
 
 
         set_indexes: (indexes) =>
-            @loading = false
             @collection = indexes
             @hook()
 
         hook: =>
             @$el.html @template
-                loading: @loading
                 adding_index: @adding_index
-
-            @loading = false
 
             @collection.each (index) =>
                 view = new TableView.SecondaryIndexView
@@ -731,7 +724,6 @@ module 'TableView', ->
                 @hide_add_index()
 
         on_fail_to_connect: =>
-            @loading = false
             @render_error
                 connect_fail: true
             return @
