@@ -71,6 +71,7 @@ html, body {
     text-align: left;
     background-color: @background;
     font-family: @sans;
+    font-size: 13px;
     border-radius: 3px;
     color: lighten(black, 30%);
     position: relative;
@@ -110,6 +111,10 @@ html, body {
              @border-color,
              @background-color,
              @icon-color);
+}
+
+.unavailable-error {
+    .new-errorbox;
 }
 
 h1.title {
@@ -2448,7 +2453,7 @@ TODO: retire this
     .section h2.title {
         border-bottom: thin solid #f0f0f0;
         padding-bottom: 15px;
-        margin-bottom: 2px;
+        margin-bottom: 10px;
     }
     .section.statistics {
         > h2.title {
@@ -3802,9 +3807,4 @@ TODO: retire this
             }
         }
     }
-}
-
-.unavailable-error {
-    font-family: @sans;
-    color: #d55f5f;
 }

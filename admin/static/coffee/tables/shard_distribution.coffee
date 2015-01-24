@@ -4,20 +4,15 @@ module 'TableView', ->
     # Hardcoded!
     MAX_SHARD_COUNT = 32
 
-    class @Sharding extends Backbone.View
+    class @ShardDistribution extends Backbone.View
         className: 'shards_container'
         template:
-            main: Handlebars.templates['shards_container-template']
+            main: Handlebars.templates['shard_distribution_container']
 
         initialize: (data) =>
             if @collection?
                 @listenTo @collection, 'update', @render_data_distribution
-
-            # Bind listener for the key distribution
-
-            # @shard_settings = new TableView.ShardSettings
-            #     model: @model
-            #     container: @
+            @listenTo @model, 'change:misc_error', @render
 
         set_distribution: (shards) =>
             @collection = shards

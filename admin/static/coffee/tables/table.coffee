@@ -289,7 +289,7 @@ module 'TableView', ->
             @secondary_indexes_view = new TableView.SecondaryIndexesView
                 collection: @indexes
                 model: @model
-            @shards = new TableView.Sharding
+            @shard_distribution = new TableView.ShardDistribution
                 collection: @distribution
                 model: @model
             @server_assignments = new TableView.ShardAssignmentsView
@@ -321,7 +321,7 @@ module 'TableView', ->
 
         set_distribution: (distribution) =>
             @distribution = distribution
-            @shards.set_distribution @distribution
+            @shard_distribution.set_distribution @distribution
 
         set_assignments: (shards_assignments) =>
             @shards_assignments = shards_assignments
@@ -340,7 +340,7 @@ module 'TableView', ->
             @$('.performance-graph').html @performance_graph.render().$el
 
             # Display the shards
-            @$('.sharding').html @shards.render().el
+            @$('.sharding').html @shard_distribution.render().el
 
             # Display the server assignments
             @$('.server-assignments').html @server_assignments.render().el
@@ -391,7 +391,7 @@ module 'TableView', ->
         remove: =>
             @title.remove()
             @profile.remove()
-            @shards.remove()
+            @shard_distribution.remove()
             @server_assignments.remove()
             @performance_graph.remove()
             @secondary_indexes_view.remove()
@@ -420,6 +420,7 @@ module 'TableView', ->
             @listenTo @model, 'change:num_shards', @render
             @listenTo @model, 'change:num_replicas_per_shard', @render
             @listenTo @model, 'change:num_available_replicas', @render_status
+            @listenTo @model, 'change:misc_error', @render
             @progress_bar = new UIComponents.OperationProgressBar @templates.status
             @timer = null
 
@@ -473,7 +474,8 @@ module 'TableView', ->
         # Render the status of the replicas and the progress bar if needed
         render_status: =>
             #TODO Handle backfilling when available in the api directly
-            if @model.get('num_available_replicas') < @model.get('num_replicas')
+            if @model.get('num_available_replicas') < @model.get('num_replicas') \
+              and not @model.get('misc_error')
                 if not @timer?
                     @fetch_progress()
                     return
@@ -481,7 +483,7 @@ module 'TableView', ->
                 if @progress_bar.get_stage() is 'none'
                     @progress_bar.skip_to_processing()
 
-            else if @model.get('num_available_replicas') is @model.get('num_replicas')
+            else
                 if @timer?
                     driver.stop_timer @timer
                     @timer = null

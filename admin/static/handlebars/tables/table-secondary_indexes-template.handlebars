@@ -10,7 +10,9 @@
 <div class="alert alert-error"></div>
 {{#if index_error}}
 <div class="unavailable-error">
-  Secondary indexes are unavailable while a primary is down.
+  <p>
+    Secondary indexes are unavailable while a primary replica is unreachable.
+  </p>
 </div>
 {{else}}
 <div class="content">
