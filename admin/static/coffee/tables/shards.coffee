@@ -9,22 +9,15 @@ module 'TableView', ->
         template:
             main: Handlebars.templates['shards_container-template']
 
-        view_template: Handlebars.templates['view_shards-template']
-        edit_template: Handlebars.templates['edit_shards-template']
-        feedback_template: Handlebars.templates['edit_shards-feedback-template']
-        error_ajax_template: Handlebars.templates['edit_shards-ajax_error-template']
-        reasons_cannot_shard_template: Handlebars.templates['shards-reason_cannot_shard-template']
-
-
         initialize: (data) =>
             if @collection?
                 @listenTo @collection, 'update', @render_data_distribution
 
             # Bind listener for the key distribution
 
-            @shard_settings = new TableView.ShardSettings
-                model: @model
-                container: @
+            # @shard_settings = new TableView.ShardSettings
+            #     model: @model
+            #     container: @
 
         set_distribution: (shards) =>
             @collection = shards
@@ -32,12 +25,12 @@ module 'TableView', ->
             @render_data_distribution()
 
         render: =>
-            @$el.html @template.main()
-            @$('.edit-shards').html @shard_settings.render().$el
-            @init_chart = false
-            setTimeout => # Let the element be inserted in the main DOM tree
-                @render_data_distribution()
-            , 0
+            @$el.html @template.main(@model.toJSON())
+            if not @model.get('misc_error')
+                @init_chart = false
+                setTimeout => # Let the element be inserted in the main DOM tree
+                    @render_data_distribution()
+                , 0
 
             return @
 
@@ -226,101 +219,3 @@ module 'TableView', ->
 
             @$('rect').tooltip
                 trigger: 'hover'
-
-        remove: =>
-            @stopListening()
-
-    class @ShardSettings extends Backbone.View
-        template:
-            main: Handlebars.templates['shard_settings-template']
-            alert: Handlebars.templates['alert_shard-template']
-        events:
-            'click .edit': 'toggle_edit'
-            'click .cancel': 'toggle_edit'
-            'click .rebalance': 'shard_table'
-            'keypress #num_shards': 'handle_keypress'
-
-        render: =>
-            @$el.html @template.main
-                editable: @editable
-                num_shards: @model.get 'num_shards'
-                max_shards: MAX_SHARD_COUNT #TODO: Put something else?
-            @
-
-        initialize: (data) =>
-            @editable = false
-            @container = data.container
-
-            @listenTo @model, 'change:num_shards', @render
-
-        toggle_edit: =>
-            @editable = not @editable
-            @render()
-
-            if @editable is true
-                @$('#num_shards').select()
-
-        handle_keypress: (event) =>
-            if event.which is 13
-                @shard_table()
-
-        render_shards_error: (fn) =>
-            if @$('.settings_alert').css('display') is 'block'
-                @$('.settings_alert').fadeOut 'fast', =>
-                    fn()
-                    @$('.settings_alert').fadeIn 'fast'
-            else
-                fn()
-                @$('.settings_alert').slideDown 'fast'
-
-        shard_table: =>
-            new_num_shards = parseInt @$('#num_shards').val()
-            if Math.round(new_num_shards) isnt new_num_shards
-                @render_shards_error () =>
-                    @$('.settings_alert').html @template.alert
-                        not_int: true
-                return 1
-            if new_num_shards > MAX_SHARD_COUNT
-                @render_shards_error () =>
-                    @$('.settings_alert').html @template.alert
-                        too_many_shards: true
-                        num_shards: new_num_shards
-                        max_num_shards: MAX_SHARD_COUNT
-                return 1
-            if new_num_shards < 1
-                @render_shards_error () =>
-                    @$('.settings_alert').html @template.alert
-                        need_at_least_one_shard: true
-                return 1
-
-
-            ignore = (shard) -> shard('role').ne('nothing')
-            query = r.db(@model.get('db')).table(@model.get('name')).reconfigure(
-                new_num_shards,
-                r.db(system_db).table('table_status')
-                    .get(@model.get('id'))('shards')(0).filter(ignore).count()
-            )
-            driver.run_once query, (error, result) =>
-                if error?
-                    @render_shards_error () =>
-                        @$('.settings_alert').html @template.alert
-                            server_error: true
-                            error: error
-                else
-                    @toggle_edit()
-
-                    # Triggers the start on the progress bar
-                    @container.progress_bar.render(
-                        0,
-                        result.shards.length,
-                        {new_value: result.shards.length}
-                    )
-
-                    @model.set
-                        num_available_shards: 0
-                        num_available_replicas: 0
-                        num_replicas_per_shard: result.shards[0].replicas.length
-                        num_replicas: result.shards.length*result.shards[0].replicas.length
-
-            return 0
-

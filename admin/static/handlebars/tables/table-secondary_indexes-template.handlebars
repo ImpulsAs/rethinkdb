@@ -8,6 +8,11 @@
   <div class="alert_error_content"></div>
 </div>
 <div class="alert alert-error"></div>
+{{#if index_error}}
+<div class="unavailable-error">
+  Secondary indexes are unavailable while a primary is down.
+</div>
+{{else}}
 <div class="content">
   <ul class="list_meta">
     <li class="square_li no_index">No secondary indexes found.</li>
@@ -17,5 +22,7 @@
   <ul class="list_meta">
     <li class="square_li input_li add_index_li"><input type="text" class="new_index_name" placeholder="name of the key" /><button class="btn cancel_btn">Cancel</button><button class="btn create_btn">Create</button></li>
   </ul>
-  <div class="create_container"><a href="#" class="create_link">Create a new secondary index &rarr;</a></div>
+  <div class="create_container"><a href="#" class="create_link">Create a new secondary index &rarr;</a>
+  </div>
 </div>
+{{/if}}

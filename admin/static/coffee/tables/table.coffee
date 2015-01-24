@@ -19,7 +19,7 @@ module 'TableView', ->
             @failable_misc_timer = null
             
             # Initialize the model with mostly empty dummy data so we can render it right away
-            @model = new Table {id: id}
+            @model = new Table {id: id, index_error: false, misc_error: false}
             @table_view = new TableView.TableMainView
                 model: @model
                 indexes: @indexes
@@ -127,11 +127,13 @@ module 'TableView', ->
 
             # This timer keeps track of the failable index query, so we can
             # cancel it when we navigate away from the table page.
-            @failable_index_timer = driver.run failable_index_query, 1000, (error, result) =>
+            @failable_index_timer = driver.run(
+              failable_index_query, 1000, (error, result) =>
                 if error?
                     console.log error.msg
+                    @model.set 'index_error', true
                     return
-                @error = null
+                @model.set 'index_error', false
                 if @indexes?
                     @indexes.set _.map(result, (index) -> new Index index)
                 else
@@ -148,14 +150,16 @@ module 'TableView', ->
                         distribution: @distribution
                         shards_assignments: @shards_assignments
                     @render()
-
+            )
             # This timer keeps track of the failable misc query, so we can
             # cancel it when we navigate away from the table page.
-            @failable_misc_timer = driver.run failable_misc_query, 10000, (error, result) =>
+            @failable_misc_timer = driver.run(
+              failable_misc_query, 10000, (error, result) =>
                 if error?
                     console.log error.msg
+                    @model.set 'misc_error', true
                     return
-                @error = null
+                @model.set 'misc_error', false
                 if @distribution?
                     @distribution.set _.map result.distribution, (shard) ->
                         new Shard shard
@@ -209,7 +213,7 @@ module 'TableView', ->
                         distribution: @distribution
                         shards_assignments: @shards_assignments
                     @render()
-
+            )
             # This timer keeps track of the guaranteed query, running
             # it every 5 seconds. We cancel it when navigating away
             # from the table page.
@@ -580,11 +584,10 @@ module 'TableView', ->
 
             @adding_index = false
 
-            if @collection?
-                @hook()
-            else
-                @$el.html @template
-                    adding_index: @adding_index
+            @listenTo @model, 'change:index_error', @render
+
+            @render()
+            @hook() if @collection?
 
         set_fetch_progress: (index) =>
             if not @interval_progress?
@@ -608,7 +611,8 @@ module 'TableView', ->
 
                 driver.run_once query, (error, result) =>
                     if error?
-                        # This can happen if the table is temporary unavailable. We log the error, and ignore it
+                        # This can happen if the table is temporarily
+                        # unavailable. We log the error, and ignore it
                         console.log "Nothing bad - Could not fetch secondary indexes statuses"
                         console.log error
                     else
@@ -630,9 +634,6 @@ module 'TableView', ->
             @hook()
 
         hook: =>
-            @$el.html @template
-                adding_index: @adding_index
-
             @collection.each (index) =>
                 view = new TableView.SecondaryIndexView
                     model: index
@@ -699,6 +700,9 @@ module 'TableView', ->
             @$('.main_alert_error').hide()
 
         render: =>
+            @$el.html @template
+                adding_index: @adding_index
+                index_error: @model.get 'index_error'
             return @
 
         # Show the form to add a secondary index
